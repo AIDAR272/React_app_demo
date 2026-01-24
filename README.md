@@ -4,7 +4,7 @@
 
 ---
 
-## 🚀 Features
+## Features
 
 - **Translate Words**  
   Translate any word using the **Google Cloud Translation API** (currently English → Russian, more languages planned).
@@ -23,7 +23,7 @@
 
 ---
 
-## 🛠 How It Works
+## How It Works
 
 1. **User Inputs a Word**  
    The frontend captures the word to be translated.
@@ -42,13 +42,13 @@
 
 ---
 
-## 🎯 Purpose
+## Purpose
 
 The purpose of **UnoLingo** is to provide an **interactive language learning tool** that combines translation and practice in one platform. Inspired by Duolingo, it emphasizes **active learning** through repeated practice, helping users retain vocabulary more effectively.
 
 ---
 
-## 🧰 Tech Stack
+## Tech Stack
 
 - **Frontend**: React, HTML, CSS
 - **Backend**: Python, FastAPI
@@ -57,7 +57,7 @@ The purpose of **UnoLingo** is to provide an **interactive language learning too
 
 ---
 
-## ⚡ Future Improvements
+## Future Improvements
 
 - Add support for **more languages**
 - Implement **user authentication and profiles**
