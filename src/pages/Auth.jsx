@@ -8,7 +8,7 @@ function Auth() {
 
     return (
         <div className="auth-container">
-            {isLoginView ? (
+            {!isLoginView ? (
                 <LoginForm onSwitch={() => setIsLoginView(false)} />
             ) : (
                 <SignUpForm onSwitch={() => setIsLoginView(true)} />
