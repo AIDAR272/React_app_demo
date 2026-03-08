@@ -2,14 +2,27 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Translate.css";
 
+const LANGUAGES = [
+    { code: "en", name: "English" },
+    { code: "ru", name: "Russian" },
+    { code: "fr", name: "French" },
+    { code: "de", name: "German" },
+    { code: "ky", name: "Kyrgyz" }
+];
+
 function Translate() {
     const navigate = useNavigate();
 
     const [sourceText, setSourceText] = useState("");
     const [translatedText, setTranslatedText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [sourceLang, setSourceLang] = useState("en");
+    const [targetLang, setTargetLang] = useState("ru");
+    const [showSuccess, setShowSuccess] = useState(false);
 
     function handleLogout() {
+        localStorage.removeItem("token");
+        localStorage.removeItem("id");
         navigate("/");
     }
 
@@ -24,24 +37,27 @@ function Translate() {
 
     async function handleFavoriteClick() {
         const userId = localStorage.getItem("id");
-        if(!userId) {
+        if (!userId) {
             alert("Please log in first!");
             return;
         }
+        if (!sourceText || !translatedText || translatedText === "Error translating text.") return;
 
         const url = `https://unolingo-backend-production.up.railway.app/word?user_id=${encodeURIComponent(userId)}&word=${encodeURIComponent(sourceText)}&translation=${encodeURIComponent(translatedText)}`;
+
         try {
             const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" }
             });
 
-            if(!response.ok) alert("Error adding word to favorites!");
-            else {
-                const data = response.json();
-                console.log(data.message);
-                setSourceText("")
-                setTranslatedText("")
+            if (response.ok) {
+                setShowSuccess(true);
+                setSourceText("");
+                setTranslatedText("");
+                setTimeout(() => setShowSuccess(false), 2000);
+            } else {
+                alert("Error adding word to favorites!");
             }
         } catch (error) {
             console.error("Error:", error);
@@ -56,18 +72,16 @@ function Translate() {
         }
 
         const timeoutId = setTimeout(() => {
-            fetchTranslation(sourceText);
+            fetchTranslation(sourceText, sourceLang, targetLang);
         }, 800);
 
         return () => clearTimeout(timeoutId);
+    }, [sourceText, sourceLang, targetLang]);
 
-    }, [sourceText]);
-
-
-    async function fetchTranslation(textToTranslate) {
+    async function fetchTranslation(textToTranslate, src, tgt) {
         setIsLoading(true);
         try {
-            const url = `https://unolingo-backend-production.up.railway.app/translate?word=${encodeURIComponent(textToTranslate)}`;
+            const url = `https://unolingo-backend-production.up.railway.app/translate?word=${encodeURIComponent(textToTranslate)}&source_language=${src}&target_language=${tgt}`;
 
             const response = await fetch(url, {
                 method: "GET",
@@ -78,38 +92,63 @@ function Translate() {
                 const data = await response.json();
                 setTranslatedText(data.message);
             } else {
-                console.error("Translation failed");
                 setTranslatedText("Error translating text.");
             }
         } catch (error) {
-            console.error("Error:", error);
-            setTranslatedText("Network error.");
+            setTranslatedText("Network error.", error);
         } finally {
             setIsLoading(false);
         }
     }
 
+    const swapLanguages = () => {
+        const oldSrc = sourceLang;
+        const oldTgt = targetLang;
+        setSourceLang(oldTgt);
+        setTargetLang(oldSrc);
+        if (translatedText && translatedText !== "Error translating text.") {
+            setSourceText(translatedText);
+        }
+    };
 
     return (
         <div className="translate-page">
+            {showSuccess && (
+                <div className="success-toast">
+                    Word added to favorites
+                </div>
+            )}
+
             <header className="app-header">
                 <button className="logout-btn" onClick={handleLogout}>Log Out</button>
             </header>
 
             <main className="translate-container">
-
                 <div className="language-bar">
-                    <span className="lang-static" style={{fontWeight: "bold", color: "#1a73e8"}}>
-                        English
-                    </span>
-                    <span style={{color: "#999"}}>→</span>
-                    <span className="lang-static" style={{fontWeight: "bold", color: "#1a73e8"}}>
-                        Russian
-                    </span>
+                    <select
+                        className="lang-select"
+                        value={sourceLang}
+                        onChange={(e) => setSourceLang(e.target.value)}
+                    >
+                        {LANGUAGES.map(lang => (
+                            <option key={lang.code} value={lang.code}>{lang.name}</option>
+                        ))}
+                    </select>
+
+                    <button className="swap-btn" onClick={swapLanguages}>⇄</button>
+
+                    <select
+                        className="lang-select"
+                        value={targetLang}
+                        onChange={(e) => setTargetLang(e.target.value)}
+                    >
+                        {LANGUAGES.map(lang => (
+                            <option key={lang.code} value={lang.code}>{lang.name}</option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="translation-box">
-                    {/* Input Area */}
                     <div className="text-area-wrapper input-wrapper">
                         <textarea
                             placeholder="Enter text to translate..."
@@ -118,52 +157,34 @@ function Translate() {
                             maxLength={5000}
                             autoFocus
                         ></textarea>
-
                         {sourceText && (
-                            <button
-                                className="clear-btn"
-                                onClick={() => {
-                                    setSourceText("");
-                                    setTranslatedText("");
-                                }}
-                            >
+                            <button className="clear-btn" onClick={() => {setSourceText(""); setTranslatedText("");}}>
                                 ❌
                             </button>
                         )}
                     </div>
 
-                    {/* Output Area */}
                     <div className="text-area-wrapper output-wrapper">
                         {isLoading ? (
-                            <div className="loading-overlay" style={{color: "#888", fontStyle:"italic", fontSize: "1.5rem"}}>
-                                ...
-                            </div>
+                            <div className="loading-overlay">...</div>
                         ) : (
                             <textarea
                                 readOnly
                                 value={translatedText}
-                                placeholder="Перевод"
+                                placeholder="Translation"
                             ></textarea>
                         )}
                     </div>
                 </div>
             </main>
+
             <div className="footer-menu">
                 <div className="menu-item" onClick={handleTrainClick}>
-                    <img
-                        src="/train.jpeg"
-                        alt="Train"
-                        className="menu-icon"
-                    />
+                    <img src="/train.jpeg" alt="Train" className="menu-icon" />
                     <p>Train</p>
                 </div>
-
                 <div className="menu-item" onClick={handleFavoriteClick}>
-                    <img
-                        src="/favorite.png"
-                        alt="Favorite"
-                        className="menu-icon"
-                    />
+                    <img src="/favorite.png" alt="Favorite" className="menu-icon" />
                     <p>Favorite</p>
                 </div>
             </div>
